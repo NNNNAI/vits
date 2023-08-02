@@ -1,0 +1,34 @@
+FROM nvcr.io/nvidia/pytorch:22.02-py3 as base
+
+
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+
+
+RUN echo "Acquire::http::Proxy \"http://devops.io:3142\";" > /etc/apt/apt.conf.d/00aptproxy
+
+RUN apt-get update && apt-get install -y libglib2.0-0 libgl1-mesa-glx sudo  \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# Development image
+FROM base as development
+
+
+RUN groupadd -g 1000 mygroup
+RUN useradd -u 1000 -g 1000 -m myuser
+
+# Add myuser to the sudo group
+RUN usermod -aG sudo myuser
+
+# Set a password for myuser (optional)
+# RUN echo 'myuser:password' | chpasswd
+
+# Allow myuser to use sudo without a password
+RUN echo 'myuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/myuser && \
+    chmod 0440 /etc/sudoers.d/myuser
+
+# Switch to the new user
+USER myuser
